@@ -31,6 +31,11 @@ jobs:
       - name: Check the Hub
         run: curl http://localhost:4444/ui
 
+      - name: Install Selenium client
+        run: pip install -U selenium
+
+      - name: Run test
+        run: python tests/hello_example.py
       - name: Get AUT URL
         run: |
           URL=http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1)
