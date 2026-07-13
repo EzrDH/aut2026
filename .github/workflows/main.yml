@@ -47,6 +47,12 @@ jobs:
       - name: Run test
         run: python tests/hello_aut.py ${{ env.URL }}
 
+      - name: 'Upload Artifacts'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot
+          path: screenshot.png
+
       # --- PERBAIKAN PEMBERSIHAN: Hentikan semua container baik tes sukses maupun gagal ---
       - name: Stop and Clean Docker Containers
         if: always()
