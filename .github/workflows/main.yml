@@ -1,45 +1,43 @@
 name: OTF Testing
 on:
-    push:
-        branches:
-        - main
+  push:
+    branches:
+    - main
 
 jobs:   
-    test:
-        name: Functional Test
-        permissions: write-all
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout the repo
-              uses: actions/checkout@v4
+  test:
+    name: Functional Test
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
 
-            - name: Create isolated network
-              run: docker network create --driver bridge isolated
+      - name: Create isolated network
+        run: docker network create --driver bridge isolated
 
-            - name: Deploy AUT
-              run: docker build -t my-php-site:latest.
+      - name: Deploy AUT
+        run: docker build -t my-php-site:latest .
 
-            - name: Run AUT
-              run: docker run --network=isolated -p 80:80 --name docker-apache -t -d my-php-site:latest
+      - name: Run AUT
+        run: docker run --network=isolated -p 80:80 --name docker-apache -t -d my-php-site:latest
 
-            - name: Selenium Preparation
-              run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name firefox-standalone selenium/standalone-firefox:latest
+      - name: Selenium Preparation
+        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name firefox-standalone selenium/standalone-firefox:latest
 
-            - name: Wait for Selenium Hub
-              run: sh wait.sh
+      - name: Wait for Selenium Hub
+        run: sh wait.sh
 
-            - name: Check the Hub
-              run: curl http://localhost:4444/ui
+      - name: Check the Hub
+        run: curl http://localhost:4444/ui
 
+      - name: Get AUT URL
+        run: |
+          URL=http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1)
+          echo "URL=$URL" >> $GITHUB_ENV
 
-            - name: Get AUT URL
-              run: |
-                URL=http://$(ip -f inet -o addr show dockere | awk '{print $4}' | cut -d '/' -f 1)
-                echo "URL=$URL" >> $GITHUB_ENV
+      - name: Check AUT Url
+        run: curl ${{ env.URL }}
 
-            - name: Check AUT Url
-              run: curl ${{ env.URL }}
-
-            - name: stop docker
-              run: docker stop docker-apache
-
+      - name: stop docker
+        run: docker stop docker-apache
