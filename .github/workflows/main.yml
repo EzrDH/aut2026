@@ -6,9 +6,16 @@ on:
 
 jobs:   
   test:
-    name: Functional Test
+    name: Test on ${{ matrix.browser }} # Nama job akan berubah sesuai browser
     permissions: write-all
     runs-on: ubuntu-latest
+    
+    # 1. Tambahkan Matrix Strategy di sini
+    strategy:
+      fail-fast: false # Agar jika 1 browser gagal, browser lain tetap lanjut berjalan
+      matrix:
+        browser: [firefox, chrome, edge]
+
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -22,8 +29,9 @@ jobs:
       - name: Run AUT
         run: docker run --network=isolated -p 80:80 --name docker-apache -t -d my-php-site:latest
 
+      # 2. Ubah pemanggilan image Docker menjadi dinamis sesuai matrix
       - name: Selenium Preparation
-        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name firefox-standalone selenium/standalone-firefox:latest
+        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-node selenium/standalone-${{ matrix.browser }}:latest
 
       - name: Wait for Selenium Hub
         run: sh wait.sh
@@ -31,7 +39,6 @@ jobs:
       - name: Check the Hub
         run: curl http://localhost:4444/ui
 
-      # --- PERBAIKAN URUTAN: Ambil & Cek URL AUT sebelum tes dijalankan ---
       - name: Get AUT URL
         run: |
           URL=http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1)
@@ -40,23 +47,25 @@ jobs:
       - name: Check AUT Url
         run: curl ${{ env.URL }}
 
-      # --- Eksekusi Pengujian ---
       - name: Install Selenium client
         run: pip install -U selenium
 
+      # 3. Lempar environment variable ke Python
       - name: Run test
+        env:
+          BROWSER_TYPE: ${{ matrix.browser }}
         run: python tests/hello_aut.py ${{ env.URL }}
 
-      - name: 'Upload Artifacts'
+      # 4. Simpan screenshot dengan nama dinamis
+      - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: screenshot
-          path: screenshot.png
+          name: Screenshot-${{ matrix.browser }}
+          path: screenshot_${{ matrix.browser }}.png
 
-      # --- PERBAIKAN PEMBERSIHAN: Hentikan semua container baik tes sukses maupun gagal ---
       - name: Stop and Clean Docker Containers
         if: always()
         run: |
-          docker stop docker-apache firefox-standalone
-          docker rm docker-apache firefox-standalone
+          docker stop docker-apache selenium-node
+          docker rm docker-apache selenium-node
           docker network rm isolated

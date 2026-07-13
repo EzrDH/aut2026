@@ -1,11 +1,21 @@
-import unittest, sys
+import unittest, sys, os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 class AutTest(unittest.TestCase):
 
     def setUp(self):
-        options = webdriver.FirefoxOptions()
+        # Mengambil jenis browser dari Environment Variable (default: firefox)
+        browser_type = os.getenv('BROWSER_TYPE', 'firefox').lower()
+
+        # Pemilihan Options secara dinamis
+        if browser_type == 'chrome':
+            options = webdriver.ChromeOptions()
+        elif browser_type == 'edge':
+            options = webdriver.EdgeOptions()
+        else:
+            options = webdriver.FirefoxOptions()
+
         options.add_argument("--ignore-ssl-errors=yes")
         options.add_argument("--ignore-certificate-errors")
         server = 'http://localhost:4444'
@@ -20,7 +30,11 @@ class AutTest(unittest.TestCase):
             url = "http://localhost"
 
         self.browser.get(url)
-        self.browser.save_screenshot("screenshot.png")
+        
+        # Penamaan screenshot dinamis agar mudah dibedakan
+        browser_type = os.getenv('BROWSER_TYPE', 'firefox')
+        self.browser.save_screenshot(f'screenshot_{browser_type}.png')
+
         expected_result = "Welcome back, Guest!"
         actual_result = self.browser.find_element(By.TAG_NAME, 'p')
 
