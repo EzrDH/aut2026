@@ -22,6 +22,16 @@ jobs:
             - name: Run AUT
               run: docker run --network=isolated -p 80:80 --name docker-apache -t -d my-php-site:latest
 
+            - name: Selenium Preparation
+              run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name firefox-standalone selenium/standalone-firefox:latest
+
+            - name: Wait for Selenium Hub
+              run: sh wait.sh
+
+            - name: Check the Hub
+              run: curl http://localhost:4444/ui
+
+
             - name: Get AUT URL
               run: |
                 URL=http://$(ip -f inet -o addr show dockere | awk '{print $4}' | cut -d '/' -f 1)
