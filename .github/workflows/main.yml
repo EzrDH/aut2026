@@ -31,11 +31,7 @@ jobs:
       - name: Check the Hub
         run: curl http://localhost:4444/ui
 
-      - name: Install Selenium client
-        run: pip install -U selenium
-
-      - name: Run test
-        run: python tests/hello_example.py
+      # --- PERBAIKAN URUTAN: Ambil & Cek URL AUT sebelum tes dijalankan ---
       - name: Get AUT URL
         run: |
           URL=http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1)
@@ -44,5 +40,17 @@ jobs:
       - name: Check AUT Url
         run: curl ${{ env.URL }}
 
-      - name: stop docker
-        run: docker stop docker-apache
+      # --- Eksekusi Pengujian ---
+      - name: Install Selenium client
+        run: pip install -U selenium
+
+      - name: Run test
+        run: python tests/hello_example.py
+
+      # --- PERBAIKAN PEMBERSIHAN: Hentikan semua container baik tes sukses maupun gagal ---
+      - name: Stop and Clean Docker Containers
+        if: always()
+        run: |
+          docker stop docker-apache firefox-standalone
+          docker rm docker-apache firefox-standalone
+          docker network rm isolated
