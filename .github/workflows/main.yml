@@ -45,7 +45,7 @@ jobs:
         run: pip install -U selenium
 
       - name: Run test
-        run: python tests/hello_example.py
+        run: python tests/hello_aut.py ${{ env.URL }}
 
       # --- PERBAIKAN PEMBERSIHAN: Hentikan semua container baik tes sukses maupun gagal ---
       - name: Stop and Clean Docker Containers
